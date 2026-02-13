@@ -1,9 +1,22 @@
 import http from "node:http";
+import { execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { store, type FeedbackItem } from "./store.js";
 
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB
+
+function killPortHolder(port: number): void {
+  try {
+    const pids = execSync(`lsof -ti:${port}`, { encoding: "utf-8" }).trim();
+    if (pids) {
+      execSync(`kill ${pids.split("\n").join(" ")}`);
+      console.error(`[HTTP] Killed old process(es) on port ${port}`);
+    }
+  } catch {
+    // Nothing on the port — good
+  }
+}
 
 export function startHttpBridge(port: number): void {
   const projectName = path.basename(process.cwd());
@@ -87,12 +100,15 @@ export function startHttpBridge(port: number): void {
     res.end();
   });
 
+  let retried = false;
+
   server.on("error", (err: NodeJS.ErrnoException) => {
-    if (err.code === "EADDRINUSE") {
-      // Another instance already owns the HTTP bridge — that's fine.
-      // This instance still works via stdio MCP. The existing HTTP bridge
-      // handles Chrome extension requests for all instances.
-      console.error(`[HTTP] Port ${port} already in use — sharing with existing instance. Stdio MCP still works.`);
+    if (err.code === "EADDRINUSE" && !retried) {
+      retried = true;
+      killPortHolder(port);
+      setTimeout(() => server.listen(port, "127.0.0.1"), 500);
+    } else if (err.code === "EADDRINUSE") {
+      console.error(`[HTTP] Port ${port} still in use after retry — stdio MCP still works.`);
     } else {
       console.error(`[HTTP] Server error: ${err.message}`);
     }
