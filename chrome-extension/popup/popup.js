@@ -32,36 +32,32 @@ document.addEventListener("DOMContentLoaded", async () => {
     captureBtn.disabled = true;
     captureBtn.textContent = "Capturing...";
 
-    // Get tab info
-    const tabInfo = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: "getTabInfo" }, resolve);
-    });
+    try {
+      // Get active tab directly from popup context (reliable windowId)
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    // Capture screenshot
-    const capture = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: "captureTab" }, resolve);
-    });
+      // Capture screenshot directly from popup
+      const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: "png" });
 
-    if (capture.error) {
-      captureBtn.textContent = `Error: ${capture.error}`;
+      // Store data for editor tab
+      await chrome.storage.local.set({
+        pendingCapture: {
+          dataUrl,
+          pageUrl: tab.url || "",
+          pageTitle: tab.title || "",
+          tabId: tab.id,
+        },
+      });
+
+      // Open editor in the SAME window — tab.windowId is reliable from popup context
+      chrome.tabs.create({
+        url: chrome.runtime.getURL("editor/editor.html"),
+        windowId: tab.windowId,
+      });
+      window.close();
+    } catch (err) {
+      captureBtn.textContent = `Error: ${err.message}`;
       captureBtn.disabled = false;
-      return;
     }
-
-    // Store data for editor tab
-    await chrome.storage.local.set({
-      pendingCapture: {
-        dataUrl: capture.dataUrl,
-        pageUrl: tabInfo.url,
-        pageTitle: tabInfo.title,
-        tabId: tabInfo.tabId,
-      },
-    });
-
-    // Open editor in the same window as the captured tab
-    const createOpts = { url: chrome.runtime.getURL("editor/editor.html") };
-    if (tabInfo.windowId) createOpts.windowId = tabInfo.windowId;
-    chrome.tabs.create(createOpts);
-    window.close();
   });
 });

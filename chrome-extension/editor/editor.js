@@ -238,9 +238,7 @@ class AnnotationEditor {
         throw new Error(data.error || "Server error");
       }
     } catch (err) {
-      this.addMessage("system", `Error: ${err.message}`);
-      document.getElementById("canvasArea").classList.remove("hidden");
-      document.querySelector(".layout").classList.remove("chat-only");
+      this.addMessage("system", `Error sending: ${err.message}. Close tab and try again.`);
       sendBtn.disabled = false;
     }
   }
