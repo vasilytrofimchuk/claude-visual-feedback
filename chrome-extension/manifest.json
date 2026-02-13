@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Claude Visual Feedback",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Capture screenshots, circle issues, and send to Claude Code for fixing",
   "permissions": [
     "activeTab",
     "tabs",
-    "storage"
+    "storage",
+    "scripting"
   ],
   "action": {
     "default_popup": "popup/popup.html",
@@ -25,5 +26,9 @@
     "16": "icons/icon-16.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
-  }
+  },
+  "web_accessible_resources": [{
+    "resources": ["editor/*"],
+    "matches": ["<all_urls>"]
+  }]
 }

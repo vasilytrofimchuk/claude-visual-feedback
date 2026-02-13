@@ -33,13 +33,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     captureBtn.textContent = "Capturing...";
 
     try {
-      // Get active tab directly from popup context (reliable windowId)
+      // Get active tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-      // Capture screenshot directly from popup
+      // Capture screenshot
       const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: "png" });
 
-      // Store data for editor tab
+      // Store data for editor
       await chrome.storage.local.set({
         pendingCapture: {
           dataUrl,
@@ -49,11 +49,43 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
       });
 
-      // Open editor in the SAME window — tab.windowId is reliable from popup context
-      chrome.tabs.create({
-        url: chrome.runtime.getURL("editor/editor.html"),
-        windowId: tab.windowId,
+      // Inject sidebar directly into the page (no new tab/window)
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          // Remove existing sidebar
+          const old = document.getElementById("vf-sidebar");
+          if (old) old.remove();
+
+          // Create sidebar container
+          const sidebar = document.createElement("div");
+          sidebar.id = "vf-sidebar";
+          sidebar.style.cssText =
+            "position:fixed;top:0;right:0;width:450px;height:100vh;" +
+            "z-index:2147483647;box-shadow:-4px 0 20px rgba(0,0,0,0.4);";
+
+          const iframe = document.createElement("iframe");
+          iframe.src = chrome.runtime.getURL("editor/editor.html");
+          iframe.style.cssText = "width:100%;height:100%;border:none;";
+          sidebar.appendChild(iframe);
+
+          document.body.appendChild(sidebar);
+
+          // Push page content left
+          document.documentElement.style.marginRight = "450px";
+          document.documentElement.style.transition = "margin-right 0.15s";
+
+          // Listen for close message from editor iframe
+          window.addEventListener("message", function handler(e) {
+            if (e.data?.type === "vf-close") {
+              sidebar.remove();
+              document.documentElement.style.marginRight = "";
+              window.removeEventListener("message", handler);
+            }
+          });
+        },
       });
+
       window.close();
     } catch (err) {
       captureBtn.textContent = `Error: ${err.message}`;

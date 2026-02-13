@@ -2,100 +2,51 @@
 
 html, body {
   height: 100%;
-  background: #111;
+  background: #16163a;
   color: #e0e0e0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
 }
 
-/* ---- Two-column layout ---- */
-.layout {
+/* ---- Single-column sidebar ---- */
+.sidebar {
   display: flex;
+  flex-direction: column;
   height: 100vh;
 }
 
-/* ---- Left: Screenshot area ---- */
-.canvas-area {
-  flex: 1;
+/* ---- Header ---- */
+.sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: #0a0a0a;
-  position: relative;
-}
-
-.canvas-wrapper {
-  position: relative;
-  max-width: calc(100% - 16px);
-  max-height: calc(100% - 16px);
-}
-
-#screenshotCanvas {
-  display: block;
-  max-width: 100%;
-  max-height: calc(100vh - 16px);
-}
-
-#annotationCanvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  cursor: crosshair;
-  touch-action: none;
-  z-index: 2;
-}
-
-/* ---- Close button ---- */
-.close-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 4;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  color: #ccc;
-  font-size: 20px;
-  line-height: 32px;
-  text-align: center;
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.15s, color 0.15s;
-}
-
-.close-btn:hover {
-  background: rgba(220, 50, 50, 0.8);
-  color: #fff;
-}
-
-/* ---- Canvas hidden after send ---- */
-.canvas-area.hidden { display: none; }
-.layout.chat-only .chat-panel { width: 100%; }
-
-/* ---- Right: Chat panel ---- */
-.chat-panel {
-  width: 340px;
-  display: flex;
-  flex-direction: column;
-  background: #16163a;
-  border-left: 1px solid #2a2a4a;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #2a2a4a;
   flex-shrink: 0;
 }
 
-.chat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid #2a2a4a;
+.close-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #888;
+  font-size: 18px;
+  line-height: 28px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.close-btn:hover {
+  background: rgba(220, 50, 50, 0.3);
+  color: #f87171;
 }
 
 .project-label {
+  flex: 1;
   font-size: 13px;
   font-weight: 600;
   color: #a0a0c0;
@@ -109,9 +60,40 @@ html, body {
   color: #888;
   font-size: 11px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .small-btn:hover { background: #2a2a4a; }
+
+/* ---- Screenshot area ---- */
+.screenshot-area {
+  padding: 8px;
+  border-bottom: 1px solid #2a2a4a;
+  background: #0a0a0a;
+  flex-shrink: 0;
+}
+
+.screenshot-area.hidden { display: none; }
+
+.canvas-wrapper {
+  position: relative;
+}
+
+#screenshotCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+#annotationCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
 
 /* ---- Chat messages ---- */
 .chat-messages {
@@ -127,7 +109,7 @@ html, body {
   color: #555;
   font-size: 13px;
   text-align: center;
-  padding: 24px 12px;
+  padding: 16px 12px;
   line-height: 1.5;
 }
 
@@ -165,7 +147,7 @@ html, body {
 
 .msg .thumb {
   width: 100%;
-  max-height: 80px;
+  max-height: 60px;
   object-fit: cover;
   border-radius: 6px;
   margin-bottom: 6px;
@@ -185,8 +167,9 @@ html, body {
 .chat-input {
   display: flex;
   gap: 8px;
-  padding: 12px;
+  padding: 10px 12px;
   border-top: 1px solid #2a2a4a;
+  flex-shrink: 0;
 }
 
 .chat-input input {
@@ -204,7 +187,7 @@ html, body {
 .chat-input input::placeholder { color: #555; }
 
 .send-btn {
-  padding: 10px 20px;
+  padding: 10px 18px;
   border: none;
   border-radius: 8px;
   background: #6366f1;
@@ -213,27 +196,8 @@ html, body {
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .send-btn:hover:not(:disabled) { background: #4f46e5; }
 .send-btn:disabled { background: #2a2a4a; color: #555; cursor: not-allowed; }
-
-/* ---- Status toast ---- */
-.status-msg {
-  position: fixed;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  background: rgba(26, 26, 46, 0.95);
-  border: 1px solid #333;
-  display: none;
-  z-index: 20;
-}
-
-.status-msg.visible { display: block; }
-.status-msg.success { border-color: #4ade80; color: #4ade80; }
-.status-msg.error { border-color: #f87171; color: #f87171; }

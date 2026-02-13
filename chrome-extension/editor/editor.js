@@ -20,7 +20,6 @@ class AnnotationEditor {
     this.pollTimer = null;
     this.serverUrl = "";
 
-    // Attach events SYNCHRONOUSLY — never inside async init
     this.setupEvents();
     this.init().catch((err) => console.error("[VF] init error:", err));
   }
@@ -29,7 +28,6 @@ class AnnotationEditor {
     const settings = await chrome.storage.sync.get({ host: DEFAULT_HOST, port: DEFAULT_PORT });
     this.serverUrl = `http://${settings.host}:${settings.port}`;
 
-    // Load project name
     try {
       const res = await fetch(`${this.serverUrl}/health`);
       const data = await res.json();
@@ -38,7 +36,8 @@ class AnnotationEditor {
 
     const { pendingCapture } = await chrome.storage.local.get("pendingCapture");
     if (!pendingCapture) {
-      document.body.innerHTML = '<p style="padding:40px;text-align:center;color:#888">No screenshot. Use the extension popup to capture first.</p>';
+      document.getElementById("screenshotArea").innerHTML =
+        '<p style="padding:16px;text-align:center;color:#555;font-size:12px">No screenshot captured.</p>';
       return;
     }
 
@@ -64,13 +63,12 @@ class AnnotationEditor {
         this.screenshotCtx.drawImage(img, 0, 0, w, h);
         resolve();
       };
-      img.onerror = () => reject(new Error("Failed to load screenshot image"));
+      img.onerror = () => reject(new Error("Failed to load screenshot"));
       img.src = dataUrl;
     });
   }
 
   setupEvents() {
-    // Canvas drawing — use mouse events as fallback alongside pointer events
     const canvas = this.annotationCanvas;
 
     canvas.addEventListener("pointerdown", (e) => {
@@ -87,10 +85,11 @@ class AnnotationEditor {
     });
     canvas.addEventListener("pointerleave", () => this.onPointerUp());
 
-    // Close button
-    document.getElementById("closeBtn").addEventListener("click", () => window.close());
+    // Close — tell parent page to remove the sidebar iframe
+    document.getElementById("closeBtn").addEventListener("click", () => {
+      window.parent.postMessage({ type: "vf-close" }, "*");
+    });
 
-    // Undo
     document.getElementById("undoBtn").addEventListener("click", () => this.undo());
     document.addEventListener("keydown", (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "z") {
@@ -99,7 +98,6 @@ class AnnotationEditor {
       }
     });
 
-    // Send
     document.getElementById("instructions").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -207,15 +205,13 @@ class AnnotationEditor {
     const instructions = input.value.trim();
     const annotatedScreenshot = this.exportComposite();
 
-    // Add user message to chat
     const thumbDataUrl = this.screenshotCanvas.toDataURL("image/jpeg", 0.3);
     const userText = instructions || "Fix the circled issues";
     this.addMessage("user", `<img class="thumb" src="${thumbDataUrl}" />${this._esc(userText)}`);
     input.value = "";
 
-    // Hide screenshot area, expand chat to full width
-    document.getElementById("canvasArea").classList.add("hidden");
-    document.querySelector(".layout").classList.add("chat-only");
+    // Hide screenshot after sending
+    document.getElementById("screenshotArea").classList.add("hidden");
 
     try {
       const res = await fetch(`${this.serverUrl}/feedback`, {
@@ -232,13 +228,13 @@ class AnnotationEditor {
       const data = await res.json();
       if (data.ok) {
         this.currentFeedbackId = data.id;
-        this.addMessage("system", "Sent to Claude. Waiting for response...");
+        this.addMessage("system", "Sent to Claude. Waiting...");
         this.startPolling(data.id);
       } else {
         throw new Error(data.error || "Server error");
       }
     } catch (err) {
-      this.addMessage("system", `Error sending: ${err.message}. Close tab and try again.`);
+      this.addMessage("system", `Error: ${err.message}`);
       sendBtn.disabled = false;
     }
   }
@@ -261,14 +257,11 @@ class AnnotationEditor {
     try {
       const res = await fetch(`${this.serverUrl}/feedback/${feedbackId}`);
       const data = await res.json();
-
       if (data.status === "done") {
         this.stopPolling();
         this.onClaudeResponse(data.response);
       }
-    } catch {
-      // Server might have restarted, keep polling
-    }
+    } catch {}
   }
 
   onClaudeResponse(response) {
@@ -286,8 +279,6 @@ class AnnotationEditor {
     document.getElementById("instructions").placeholder = "Follow up...";
   }
 
-  // ---- Page refresh & recapture ----
-
   refreshOriginalPage() {
     if (this.captureData.tabId) {
       chrome.runtime.sendMessage({ action: "reloadTab", tabId: this.captureData.tabId });
@@ -297,7 +288,6 @@ class AnnotationEditor {
 
   async recapture() {
     if (!this.captureData.tabId) return;
-
     this.addMessage("system", "Recapturing...");
 
     const capture = await new Promise((resolve) => {
@@ -313,18 +303,14 @@ class AnnotationEditor {
       this.captureData.dataUrl = capture.dataUrl;
       this.redraw();
 
-      document.getElementById("canvasArea").classList.remove("hidden");
-      document.querySelector(".layout").classList.remove("chat-only");
-
-      this.addMessage("system", "New screenshot loaded. Circle issues and send again.");
+      document.getElementById("screenshotArea").classList.remove("hidden");
+      this.addMessage("system", "New screenshot. Circle and send.");
       document.getElementById("sendBtn").disabled = false;
       document.getElementById("instructions").placeholder = "What to fix? (optional)";
     } else {
-      this.addMessage("system", "Failed to recapture. Try switching to the tab first.");
+      this.addMessage("system", "Failed to recapture.");
     }
   }
-
-  // ---- Utils ----
 
   _esc(text) {
     const div = document.createElement("div");

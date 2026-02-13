@@ -6,42 +6,37 @@
   <link rel="stylesheet" href="editor.css">
 </head>
 <body>
-  <div class="layout">
-    <!-- Left: Screenshot canvas -->
-    <div class="canvas-area" id="canvasArea">
+  <div class="sidebar">
+    <div class="sidebar-header">
       <button id="closeBtn" class="close-btn" title="Close">&times;</button>
+      <span id="projectLabel" class="project-label">Visual Feedback</span>
+      <button id="undoBtn" class="small-btn" title="Undo (Ctrl+Z)">Undo</button>
+    </div>
+
+    <div class="screenshot-area" id="screenshotArea">
       <div class="canvas-wrapper">
         <canvas id="screenshotCanvas"></canvas>
         <canvas id="annotationCanvas"></canvas>
       </div>
     </div>
 
-    <!-- Right: Chat panel -->
-    <div class="chat-panel">
-      <div class="chat-header">
-        <span id="projectLabel" class="project-label">Visual Feedback</span>
-        <button id="undoBtn" class="small-btn" title="Undo (Ctrl+Z)">Undo</button>
+    <div class="chat-messages" id="chatMessages">
+      <div class="empty-state" id="emptyState">
+        Circle issues, then send.
       </div>
+    </div>
 
-      <div class="chat-messages" id="chatMessages">
-        <div class="empty-state" id="emptyState">
-          Circle issues on the screenshot, then describe or just send.
-        </div>
-      </div>
-
-      <div class="chat-input">
-        <input
-          type="text"
-          id="instructions"
-          placeholder="What to fix? (optional)"
-          autocomplete="off"
-        />
-        <button id="sendBtn" class="send-btn">Send</button>
-      </div>
+    <div class="chat-input">
+      <input
+        type="text"
+        id="instructions"
+        placeholder="What to fix? (optional)"
+        autocomplete="off"
+      />
+      <button id="sendBtn" class="send-btn">Send</button>
     </div>
   </div>
 
-  <div id="status" class="status-msg"></div>
   <script src="editor.js"></script>
 </body>
 </html>
