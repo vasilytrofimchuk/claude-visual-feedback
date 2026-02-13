@@ -1,0 +1,8 @@
+src/
+tsconfig.json
+*.tsbuildinfo
+.git/
+.github/
+chrome-extension/
+*.ts
+!build/**/*.js

@@ -14,6 +14,11 @@
   "keywords": ["mcp", "claude", "visual-feedback", "screenshot", "annotation"],
   "author": "Vasily Trofimchuk",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vasilytrofimchuk/claude-visual-feedback.git"
+  },
+  "homepage": "https://github.com/vasilytrofimchuk/claude-visual-feedback#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
     "zod": "^3.23.8"
