@@ -17,6 +17,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         url: tab?.url || "",
         title: tab?.title || "",
         tabId: tab?.id || null,
+        windowId: tab?.windowId || null,
       });
     });
     return true;

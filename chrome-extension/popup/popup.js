@@ -58,8 +58,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
     });
 
-    // Open editor
-    chrome.tabs.create({ url: chrome.runtime.getURL("editor/editor.html") });
+    // Open editor in the same window as the captured tab
+    const createOpts = { url: chrome.runtime.getURL("editor/editor.html") };
+    if (tabInfo.windowId) createOpts.windowId = tabInfo.windowId;
+    chrome.tabs.create(createOpts);
     window.close();
   });
 });

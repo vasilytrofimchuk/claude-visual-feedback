@@ -91,7 +91,6 @@ class AnnotationEditor {
     });
 
     document.getElementById("sendBtn").addEventListener("click", () => this.send());
-    document.getElementById("recaptureBtn").addEventListener("click", () => this.recapture());
   }
 
   // ---- Drawing ----
@@ -196,9 +195,9 @@ class AnnotationEditor {
     this.addMessage("user", `<img class="thumb" src="${thumbDataUrl}" />${this._esc(userText)}`);
     input.value = "";
 
-    // Show waiting overlay on screenshot
-    document.getElementById("waitingOverlay").classList.remove("hidden");
-    this.annotationCanvas.style.display = "none";
+    // Hide screenshot area, expand chat to full width
+    document.getElementById("canvasArea").classList.add("hidden");
+    document.querySelector(".layout").classList.add("chat-only");
 
     try {
       const res = await fetch(`${this.serverUrl}/feedback`, {
@@ -222,8 +221,9 @@ class AnnotationEditor {
       }
     } catch (err) {
       this.addMessage("system", `Error: ${err.message}`);
-      document.getElementById("waitingOverlay").classList.add("hidden");
-      this.annotationCanvas.style.display = "";
+      // Restore screenshot area on error
+      document.getElementById("canvasArea").classList.remove("hidden");
+      document.querySelector(".layout").classList.remove("chat-only");
       sendBtn.disabled = false;
     }
   }
@@ -247,10 +247,6 @@ class AnnotationEditor {
       const res = await fetch(`${this.serverUrl}/feedback/${feedbackId}`);
       const data = await res.json();
 
-      if (data.status === "processing") {
-        document.querySelector(".waiting-text").textContent = "Claude is working on it...";
-      }
-
       if (data.status === "done") {
         this.stopPolling();
         this.onClaudeResponse(data.response);
@@ -261,20 +257,16 @@ class AnnotationEditor {
   }
 
   onClaudeResponse(response) {
-    // Show response in chat
     this.addMessage("claude", this._esc(response));
-    this.addMessage("system", '<span class="refresh-link" id="refreshPage">Refresh page to see changes</span>');
+    this.addMessage("system",
+      '<span class="refresh-link" id="refreshPage">Refresh page</span>' +
+      ' · ' +
+      '<span class="refresh-link" id="recaptureLink">Recapture</span>'
+    );
 
-    // Bind refresh handler
     document.getElementById("refreshPage").addEventListener("click", () => this.refreshOriginalPage());
+    document.getElementById("recaptureLink").addEventListener("click", () => this.recapture());
 
-    // Update waiting overlay
-    const overlay = document.getElementById("waitingOverlay");
-    overlay.querySelector(".spinner").style.display = "none";
-    overlay.querySelector(".waiting-text").textContent = "Done!";
-    document.getElementById("recaptureBtn").classList.remove("hidden");
-
-    // Enable sending again for follow-up
     document.getElementById("sendBtn").disabled = false;
     document.getElementById("instructions").placeholder = "Follow up...";
   }
@@ -302,13 +294,13 @@ class AnnotationEditor {
 
     if (capture?.dataUrl) {
       this.strokes = [];
-      this.annotationCanvas.style.display = "";
-      document.getElementById("waitingOverlay").classList.add("hidden");
-      document.getElementById("recaptureBtn").classList.add("hidden");
-
       await this.loadScreenshot(capture.dataUrl);
       this.captureData.dataUrl = capture.dataUrl;
       this.redraw();
+
+      // Show screenshot area again
+      document.getElementById("canvasArea").classList.remove("hidden");
+      document.querySelector(".layout").classList.remove("chat-only");
 
       this.addMessage("system", "New screenshot loaded. Circle issues and send again.");
       document.getElementById("sendBtn").disabled = false;

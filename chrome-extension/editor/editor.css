@@ -66,59 +66,9 @@ html, body {
   z-index: 1;
 }
 
-/* ---- Waiting overlay (shown after send) ---- */
-.waiting-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(10, 10, 10, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 5;
-}
-
-.waiting-overlay.hidden { display: none; }
-
-.waiting-content {
-  text-align: center;
-}
-
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #333;
-  border-top-color: #6366f1;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto 12px;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.waiting-text {
-  font-size: 15px;
-  color: #888;
-  margin-bottom: 16px;
-}
-
-.action-btn {
-  padding: 10px 24px;
-  border: 1px solid #6366f1;
-  border-radius: 8px;
-  background: transparent;
-  color: #6366f1;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-  margin: 4px;
-}
-
-.action-btn:hover {
-  background: rgba(99, 102, 241, 0.1);
-}
-
-.action-btn.hidden { display: none; }
+/* ---- Canvas hidden after send ---- */
+.canvas-area.hidden { display: none; }
+.layout.chat-only .chat-panel { width: 100%; }
 
 /* ---- Right: Chat panel ---- */
 .chat-panel {
