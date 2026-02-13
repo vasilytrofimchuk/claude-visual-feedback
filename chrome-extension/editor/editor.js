@@ -16,7 +16,7 @@ class AnnotationEditor {
     this.currentStroke = null;
     this.isDrawing = false;
     this.captureData = null;
-    this.currentFeedbackId = null;
+    this.pendingIds = new Set();
     this.pollTimer = null;
     this.serverUrl = "";
 
@@ -274,10 +274,12 @@ class AnnotationEditor {
 
       const data = await res.json();
       if (data.ok) {
-        this.currentFeedbackId = data.id;
-        this.addMessage("system", "Sent to Claude. Waiting...");
+        this.addMessage("system", `Queued (#${this.pendingIds.size + 1})`);
+        this.pendingIds.add(data.id);
+        this.ensurePolling();
+        // Re-enable immediately so user can send more
+        sendBtn.disabled = false;
         this.showNewScreenshotButton();
-        this.startPolling(data.id);
       } else {
         throw new Error(data.error || "Server error");
       }
@@ -287,11 +289,11 @@ class AnnotationEditor {
     }
   }
 
-  // ---- Polling ----
+  // ---- Polling (handles multiple pending items) ----
 
-  startPolling(feedbackId) {
-    this.stopPolling();
-    this.pollTimer = setInterval(() => this.poll(feedbackId), POLL_INTERVAL);
+  ensurePolling() {
+    if (this.pollTimer) return;
+    this.pollTimer = setInterval(() => this.pollAll(), POLL_INTERVAL);
   }
 
   stopPolling() {
@@ -301,15 +303,26 @@ class AnnotationEditor {
     }
   }
 
-  async poll(feedbackId) {
-    try {
-      const res = await fetch(`${this.serverUrl}/feedback/${feedbackId}`);
-      const data = await res.json();
-      if (data.status === "done") {
-        this.stopPolling();
-        this.onClaudeResponse(data.response);
-      }
-    } catch {}
+  async pollAll() {
+    if (this.pendingIds.size === 0) {
+      this.stopPolling();
+      return;
+    }
+
+    for (const feedbackId of this.pendingIds) {
+      try {
+        const res = await fetch(`${this.serverUrl}/feedback/${feedbackId}`);
+        const data = await res.json();
+        if (data.status === "done") {
+          this.pendingIds.delete(feedbackId);
+          this.onClaudeResponse(data.response);
+        }
+      } catch {}
+    }
+
+    if (this.pendingIds.size === 0) {
+      this.stopPolling();
+    }
   }
 
   showNewScreenshotButton() {
