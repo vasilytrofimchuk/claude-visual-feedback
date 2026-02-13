@@ -20,7 +20,9 @@ class AnnotationEditor {
     this.pollTimer = null;
     this.serverUrl = "";
 
-    this.init();
+    // Attach events SYNCHRONOUSLY — never inside async init
+    this.setupEvents();
+    this.init().catch((err) => console.error("[VF] init error:", err));
   }
 
   async init() {
@@ -42,11 +44,10 @@ class AnnotationEditor {
 
     this.captureData = pendingCapture;
     await this.loadScreenshot(pendingCapture.dataUrl);
-    this.setupEvents();
   }
 
   async loadScreenshot(dataUrl) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
         let w = img.width;
@@ -63,18 +64,33 @@ class AnnotationEditor {
         this.screenshotCtx.drawImage(img, 0, 0, w, h);
         resolve();
       };
+      img.onerror = () => reject(new Error("Failed to load screenshot image"));
       img.src = dataUrl;
     });
   }
 
   setupEvents() {
+    // Canvas drawing — use mouse events as fallback alongside pointer events
     const canvas = this.annotationCanvas;
-    canvas.addEventListener("pointerdown", (e) => this.onPointerDown(e));
-    canvas.addEventListener("pointermove", (e) => this.onPointerMove(e));
-    canvas.addEventListener("pointerup", () => this.onPointerUp());
+
+    canvas.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      this.onPointerDown(e);
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      e.preventDefault();
+      this.onPointerMove(e);
+    });
+    canvas.addEventListener("pointerup", (e) => {
+      e.preventDefault();
+      this.onPointerUp();
+    });
     canvas.addEventListener("pointerleave", () => this.onPointerUp());
 
+    // Close button
     document.getElementById("closeBtn").addEventListener("click", () => window.close());
+
+    // Undo
     document.getElementById("undoBtn").addEventListener("click", () => this.undo());
     document.addEventListener("keydown", (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "z") {
@@ -83,13 +99,13 @@ class AnnotationEditor {
       }
     });
 
+    // Send
     document.getElementById("instructions").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         this.send();
       }
     });
-
     document.getElementById("sendBtn").addEventListener("click", () => this.send());
   }
 
@@ -97,6 +113,7 @@ class AnnotationEditor {
 
   getCoords(e) {
     const rect = this.annotationCanvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
     const scaleX = this.annotationCanvas.width / rect.width;
     const scaleY = this.annotationCanvas.height / rect.height;
     return {
@@ -182,6 +199,7 @@ class AnnotationEditor {
   // ---- Send ----
 
   async send() {
+    if (!this.captureData) return;
     const sendBtn = document.getElementById("sendBtn");
     const input = document.getElementById("instructions");
     sendBtn.disabled = true;
@@ -221,7 +239,6 @@ class AnnotationEditor {
       }
     } catch (err) {
       this.addMessage("system", `Error: ${err.message}`);
-      // Restore screenshot area on error
       document.getElementById("canvasArea").classList.remove("hidden");
       document.querySelector(".layout").classList.remove("chat-only");
       sendBtn.disabled = false;
@@ -298,7 +315,6 @@ class AnnotationEditor {
       this.captureData.dataUrl = capture.dataUrl;
       this.redraw();
 
-      // Show screenshot area again
       document.getElementById("canvasArea").classList.remove("hidden");
       document.querySelector(".layout").classList.remove("chat-only");
 
