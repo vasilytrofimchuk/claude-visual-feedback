@@ -56,12 +56,36 @@ async function injectSidebar(tabId) {
         if (e.data?.type === "vf-close") {
           sidebar.remove();
           document.documentElement.style.marginRight = "";
+          const bd = document.getElementById("vf-backdrop");
+          if (bd) bd.remove();
           window.removeEventListener("message", handler);
         } else if (e.data?.type === "vf-hide") {
           sidebar.style.display = "none";
           document.documentElement.style.marginRight = "";
         } else if (e.data?.type === "vf-show") {
           sidebar.style.display = "";
+          document.documentElement.style.marginRight = "450px";
+        } else if (e.data?.type === "vf-expand") {
+          // Expand to large centered overlay for drawing
+          let bd = document.getElementById("vf-backdrop");
+          if (!bd) {
+            bd = document.createElement("div");
+            bd.id = "vf-backdrop";
+            bd.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:2147483646;";
+            document.body.appendChild(bd);
+          }
+          sidebar.style.cssText =
+            "position:fixed;top:20px;left:20px;right:20px;bottom:20px;" +
+            "width:auto;height:auto;z-index:2147483647;" +
+            "box-shadow:0 0 40px rgba(0,0,0,0.6);border-radius:12px;overflow:hidden;";
+          document.documentElement.style.marginRight = "";
+        } else if (e.data?.type === "vf-collapse") {
+          // Collapse back to sidebar
+          const bd = document.getElementById("vf-backdrop");
+          if (bd) bd.remove();
+          sidebar.style.cssText =
+            "position:fixed;top:0;right:0;width:450px;height:100vh;" +
+            "z-index:2147483647;box-shadow:-4px 0 20px rgba(0,0,0,0.4);";
           document.documentElement.style.marginRight = "450px";
         }
       });

@@ -1,6 +1,6 @@
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 9823;
-const MAX_WIDTH = 1440;
+const MAX_WIDTH = 2880;
 const STROKE_COLOR = "#ff3333";
 const STROKE_WIDTH = 3;
 const POLL_INTERVAL = 2000;
@@ -43,6 +43,7 @@ class AnnotationEditor {
 
     this.captureData = pendingCapture;
     await this.loadScreenshot(pendingCapture.dataUrl);
+    this.enterDrawMode();
   }
 
   async loadScreenshot(dataUrl) {
@@ -108,6 +109,19 @@ class AnnotationEditor {
       }
     });
     document.getElementById("sendBtn").addEventListener("click", () => this.send());
+  }
+
+  // ---- Draw mode (expand/collapse) ----
+
+  enterDrawMode() {
+    document.body.classList.add("draw-mode");
+    document.getElementById("screenshotArea").classList.remove("hidden");
+    window.parent.postMessage({ type: "vf-expand" }, "*");
+  }
+
+  exitDrawMode() {
+    document.body.classList.remove("draw-mode");
+    window.parent.postMessage({ type: "vf-collapse" }, "*");
   }
 
   // ---- Drawing ----
@@ -217,7 +231,7 @@ class AnnotationEditor {
       this.captureData.dataUrl = result.dataUrl;
       this.redraw();
 
-      document.getElementById("screenshotArea").classList.remove("hidden");
+      this.enterDrawMode();
       this.addMessage("system", "New screenshot. Circle and send.");
       document.getElementById("sendBtn").disabled = false;
       document.getElementById("instructions").placeholder = "What to fix? (optional)";
@@ -237,13 +251,14 @@ class AnnotationEditor {
     const instructions = input.value.trim();
     const annotatedScreenshot = this.exportComposite();
 
-    const thumbDataUrl = this.screenshotCanvas.toDataURL("image/jpeg", 0.3);
+    const thumbDataUrl = this.screenshotCanvas.toDataURL("image/jpeg", 0.5);
     const userText = instructions || "Fix the circled issues";
     this.addMessage("user", `<img class="thumb" src="${thumbDataUrl}" />${this._esc(userText)}`);
     input.value = "";
 
-    // Hide screenshot after sending
+    // Collapse to sidebar, hide screenshot
     document.getElementById("screenshotArea").classList.add("hidden");
+    this.exitDrawMode();
 
     try {
       const res = await fetch(`${this.serverUrl}/feedback`, {
@@ -320,8 +335,6 @@ class AnnotationEditor {
       action: "refreshAndReopen",
       tabId: this.captureData.tabId,
     });
-    // The page reload will destroy this iframe, but background.js
-    // will re-inject the sidebar with a fresh screenshot after reload
   }
 
   _esc(text) {

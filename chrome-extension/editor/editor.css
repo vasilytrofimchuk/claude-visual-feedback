@@ -201,3 +201,28 @@ html, body {
 
 .send-btn:hover:not(:disabled) { background: #4f46e5; }
 .send-btn:disabled { background: #2a2a4a; color: #555; cursor: not-allowed; }
+
+/* ---- Draw mode (expanded overlay) ---- */
+body.draw-mode .screenshot-area {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.draw-mode .canvas-wrapper {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+body.draw-mode #screenshotCanvas {
+  max-width: 100%;
+  max-height: calc(100vh - 140px);
+  width: auto;
+  height: auto;
+}
+
+body.draw-mode .chat-messages {
+  display: none;
+}
