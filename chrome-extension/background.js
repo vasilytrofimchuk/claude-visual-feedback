@@ -99,8 +99,47 @@ chrome.action.onClicked.addListener(async (tab) => {
   await captureAndInject(tab);
 });
 
+// Proxy fetch through background worker (avoids mixed-content blocks on HTTPS pages)
+async function proxyFetch(url, options) {
+  try {
+    const res = await fetch(url, options);
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
 // Message handler
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Proxy: health check
+  if (message.action === "healthCheck") {
+    getServerUrl().then(serverUrl =>
+      proxyFetch(`${serverUrl}/health`)
+    ).then(sendResponse);
+    return true;
+  }
+
+  // Proxy: send feedback
+  if (message.action === "sendFeedback") {
+    getServerUrl().then(serverUrl =>
+      proxyFetch(`${serverUrl}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(message.payload),
+      })
+    ).then(sendResponse);
+    return true;
+  }
+
+  // Proxy: poll feedback status
+  if (message.action === "pollFeedback") {
+    getServerUrl().then(serverUrl =>
+      proxyFetch(`${serverUrl}/feedback/${message.feedbackId}`)
+    ).then(sendResponse);
+    return true;
+  }
+
   if (message.action === "reloadTab") {
     if (message.tabId) {
       chrome.tabs.reload(message.tabId);

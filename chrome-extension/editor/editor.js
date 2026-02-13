@@ -1,5 +1,3 @@
-const DEFAULT_HOST = "127.0.0.1";
-const DEFAULT_PORT = 9823;
 const MAX_WIDTH = 2880;
 const STROKE_COLOR = "#ff3333";
 const STROKE_WIDTH = 3;
@@ -18,19 +16,14 @@ class AnnotationEditor {
     this.captureData = null;
     this.pendingIds = new Set();
     this.pollTimer = null;
-    this.serverUrl = "";
 
     this.setupEvents();
     this.init().catch((err) => console.error("[VF] init error:", err));
   }
 
   async init() {
-    const settings = await chrome.storage.sync.get({ host: DEFAULT_HOST, port: DEFAULT_PORT });
-    this.serverUrl = `http://${settings.host}:${settings.port}`;
-
     try {
-      const res = await fetch(`${this.serverUrl}/health`);
-      const data = await res.json();
+      const data = await this.bgMessage({ action: "healthCheck" });
       document.getElementById("projectLabel").textContent = data.projectName || "Visual Feedback";
     } catch {}
 
@@ -261,18 +254,16 @@ class AnnotationEditor {
     this.exitDrawMode();
 
     try {
-      const res = await fetch(`${this.serverUrl}/feedback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const data = await this.bgMessage({
+        action: "sendFeedback",
+        payload: {
           pageUrl: this.captureData.pageUrl,
           pageTitle: this.captureData.pageTitle,
           annotatedScreenshot,
           instructions,
-        }),
+        },
       });
 
-      const data = await res.json();
       if (data.ok) {
         this.addMessage("system", `Queued (#${this.pendingIds.size + 1})`);
         this.pendingIds.add(data.id);
@@ -311,8 +302,7 @@ class AnnotationEditor {
 
     for (const feedbackId of this.pendingIds) {
       try {
-        const res = await fetch(`${this.serverUrl}/feedback/${feedbackId}`);
-        const data = await res.json();
+        const data = await this.bgMessage({ action: "pollFeedback", feedbackId });
         if (data.status === "done") {
           this.pendingIds.delete(feedbackId);
           this.onClaudeResponse(data.response);
@@ -364,6 +354,11 @@ class AnnotationEditor {
       action: "refreshAndReopen",
       tabId: this.captureData.tabId,
     });
+  }
+
+  // Route all HTTP requests through background service worker
+  bgMessage(msg) {
+    return new Promise((resolve) => chrome.runtime.sendMessage(msg, resolve));
   }
 
   _esc(text) {
