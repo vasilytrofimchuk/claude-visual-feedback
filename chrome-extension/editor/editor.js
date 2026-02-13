@@ -356,9 +356,28 @@ class AnnotationEditor {
     });
   }
 
-  // Route all HTTP requests through background service worker
-  bgMessage(msg) {
-    return new Promise((resolve) => chrome.runtime.sendMessage(msg, resolve));
+  // Route all HTTP requests through background service worker (with retry)
+  bgMessage(msg, retries = 1) {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(msg, (response) => {
+        if (chrome.runtime.lastError) {
+          if (retries > 0) {
+            // Service worker may have gone inactive — retry once
+            setTimeout(() => this.bgMessage(msg, 0).then(resolve, reject), 500);
+          } else {
+            reject(new Error(chrome.runtime.lastError.message));
+          }
+        } else if (response === undefined) {
+          if (retries > 0) {
+            setTimeout(() => this.bgMessage(msg, 0).then(resolve, reject), 500);
+          } else {
+            reject(new Error("No response from extension. Try again."));
+          }
+        } else {
+          resolve(response);
+        }
+      });
+    });
   }
 
   _esc(text) {
