@@ -85,29 +85,11 @@ Add the tool permissions to your project's `.claude/settings.local.json` so Clau
 }
 ```
 
-### 6. Add auto-check instructions to your CLAUDE.md
-
-Add this section to your project's `CLAUDE.md` so Claude processes visual feedback automatically at the start of every response:
-
-```markdown
-## Visual Feedback (MCP) — MANDATORY AUTO-CHECK
-
-**CRITICAL: At the START of EVERY response, before doing anything else, call `list_visual_feedback` to check for pending items.** If there are pending items, process them ALL before addressing the user's message.
-
-Processing each item:
-1. Call `get_visual_feedback` to get the annotated screenshot
-2. Analyze the screenshot — red circles/marks indicate what needs fixing
-3. Read the instructions (if any) for additional context
-4. Fix the code based on what you see
-5. Call `respond_visual_feedback` with a summary of what you changed
-6. Repeat until no pending items remain
-```
-
-### 7. Restart Claude Code
+### 6. Restart Claude Code
 
 Restart Claude Code (or reload the window in VSCode) to pick up the MCP server configuration.
 
-### 8. Grant accessibility permissions (macOS, for auto-nudge)
+### 7. Grant accessibility permissions (macOS, for auto-nudge)
 
 The MCP server auto-types "fix" into Claude Code when feedback arrives. This requires macOS accessibility permissions:
 
@@ -130,9 +112,9 @@ The MCP server auto-types "fix" into Claude Code when feedback arrives. This req
 
 **Refresh:** Click the refresh link after Claude responds to reload the page and verify the fix, keeping the sidebar open.
 
-## Auto-Nudge
+## Auto-Nudge (Zero-Input Automation)
 
-When feedback arrives, the MCP server automatically focuses VSCode and types "fix" into Claude Code's input (after a 3-second debounce to let you stack screenshots). This triggers Claude to process all pending feedback.
+The entire flow is hands-free. When feedback arrives, the MCP server automatically focuses VSCode and types "fix" into Claude Code's input (after a 3-second debounce to let you stack screenshots). Claude then processes all pending feedback — no need to type anything or switch to the editor.
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
