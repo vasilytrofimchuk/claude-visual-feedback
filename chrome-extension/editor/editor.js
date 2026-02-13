@@ -98,6 +98,9 @@ class AnnotationEditor {
       }
     });
 
+    // New screenshot button
+    document.getElementById("newScreenshotBtn").addEventListener("click", () => this.newScreenshot());
+
     document.getElementById("instructions").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -194,6 +197,35 @@ class AnnotationEditor {
     return msg;
   }
 
+  // ---- New Screenshot ----
+
+  async newScreenshot() {
+    if (!this.captureData?.tabId) return;
+
+    this.addMessage("system", "Recapturing...");
+
+    const result = await new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { action: "recaptureTab", tabId: this.captureData.tabId },
+        resolve
+      );
+    });
+
+    if (result?.dataUrl) {
+      this.strokes = [];
+      await this.loadScreenshot(result.dataUrl);
+      this.captureData.dataUrl = result.dataUrl;
+      this.redraw();
+
+      document.getElementById("screenshotArea").classList.remove("hidden");
+      this.addMessage("system", "New screenshot. Circle and send.");
+      document.getElementById("sendBtn").disabled = false;
+      document.getElementById("instructions").placeholder = "What to fix? (optional)";
+    } else {
+      this.addMessage("system", "Failed to recapture.");
+    }
+  }
+
   // ---- Send ----
 
   async send() {
@@ -269,47 +301,27 @@ class AnnotationEditor {
     this.addMessage("system",
       '<span class="refresh-link" id="refreshPage">Refresh page</span>' +
       ' · ' +
-      '<span class="refresh-link" id="recaptureLink">Recapture</span>'
+      '<span class="refresh-link" id="recaptureLink">New screenshot</span>'
     );
 
-    document.getElementById("refreshPage").addEventListener("click", () => this.refreshOriginalPage());
-    document.getElementById("recaptureLink").addEventListener("click", () => this.recapture());
+    document.getElementById("refreshPage").addEventListener("click", () => this.refreshAndReopen());
+    document.getElementById("recaptureLink").addEventListener("click", () => this.newScreenshot());
 
     document.getElementById("sendBtn").disabled = false;
     document.getElementById("instructions").placeholder = "Follow up...";
   }
 
-  refreshOriginalPage() {
-    if (this.captureData.tabId) {
-      chrome.runtime.sendMessage({ action: "reloadTab", tabId: this.captureData.tabId });
-      this.addMessage("system", "Page refreshed.");
-    }
-  }
+  // Refresh page and re-inject sidebar with fresh screenshot
+  refreshAndReopen() {
+    if (!this.captureData?.tabId) return;
+    this.addMessage("system", "Refreshing page...");
 
-  async recapture() {
-    if (!this.captureData.tabId) return;
-    this.addMessage("system", "Recapturing...");
-
-    const capture = await new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        { action: "captureExistingTab", tabId: this.captureData.tabId },
-        resolve
-      );
+    chrome.runtime.sendMessage({
+      action: "refreshAndReopen",
+      tabId: this.captureData.tabId,
     });
-
-    if (capture?.dataUrl) {
-      this.strokes = [];
-      await this.loadScreenshot(capture.dataUrl);
-      this.captureData.dataUrl = capture.dataUrl;
-      this.redraw();
-
-      document.getElementById("screenshotArea").classList.remove("hidden");
-      this.addMessage("system", "New screenshot. Circle and send.");
-      document.getElementById("sendBtn").disabled = false;
-      document.getElementById("instructions").placeholder = "What to fix? (optional)";
-    } else {
-      this.addMessage("system", "Failed to recapture.");
-    }
+    // The page reload will destroy this iframe, but background.js
+    // will re-inject the sidebar with a fresh screenshot after reload
   }
 
   _esc(text) {
