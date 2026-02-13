@@ -226,3 +226,27 @@ body.draw-mode #screenshotCanvas {
 body.draw-mode .chat-messages {
   display: none;
 }
+
+/* ---- Big new screenshot button (chat mode) ---- */
+.new-screenshot-big {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border: 2px dashed #3a3a5a;
+  border-radius: 12px;
+  background: transparent;
+  color: #8888bb;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.new-screenshot-big:hover {
+  border-color: #6366f1;
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.08);
+}

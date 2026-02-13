@@ -314,13 +314,22 @@ class AnnotationEditor {
   onClaudeResponse(response) {
     this.addMessage("claude", this._esc(response));
     this.addMessage("system",
-      '<span class="refresh-link" id="refreshPage">Refresh page</span>' +
-      ' · ' +
-      '<span class="refresh-link" id="recaptureLink">New screenshot</span>'
+      '<span class="refresh-link" id="refreshPage">Refresh page</span>'
     );
 
     document.getElementById("refreshPage").addEventListener("click", () => this.refreshAndReopen());
-    document.getElementById("recaptureLink").addEventListener("click", () => this.newScreenshot());
+
+    // Big new screenshot button
+    const messages = document.getElementById("chatMessages");
+    const btn = document.createElement("button");
+    btn.className = "new-screenshot-big";
+    btn.textContent = "New Screenshot";
+    btn.addEventListener("click", () => {
+      btn.remove();
+      this.newScreenshot();
+    });
+    messages.appendChild(btn);
+    messages.scrollTop = messages.scrollHeight;
 
     document.getElementById("sendBtn").disabled = false;
     document.getElementById("instructions").placeholder = "Follow up...";
