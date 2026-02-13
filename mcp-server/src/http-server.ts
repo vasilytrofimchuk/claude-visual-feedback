@@ -1,10 +1,48 @@
 import http from "node:http";
-import { execSync } from "node:child_process";
+import { exec, execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { store, type FeedbackItem } from "./store.js";
 
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB
+const NUDGE_DELAY = 3000; // Wait 3s for user to stack more screenshots
+
+let nudgeTimer: ReturnType<typeof setTimeout> | null = null;
+
+function nudgeClaude(): void {
+  // Debounce — reset timer on each new feedback so user can stack multiple
+  if (nudgeTimer) clearTimeout(nudgeTimer);
+  nudgeTimer = setTimeout(() => {
+    nudgeTimer = null;
+    // Use osascript to type "fix" into VSCode Claude Code input
+    const script = `
+      tell application "System Events"
+        set frontApp to name of first application process whose frontmost is true
+      end tell
+      tell application "Visual Studio Code" to activate
+      delay 0.5
+      tell application "System Events"
+        keystroke "l" using command down
+        delay 0.3
+        keystroke "fix"
+        delay 0.1
+        key code 36
+      end tell
+      -- Restore previous app if it wasn't VSCode
+      if frontApp is not "Code" then
+        delay 0.5
+        tell application frontApp to activate
+      end if
+    `;
+    exec(`osascript -e '${script.replace(/'/g, "'\"'\"'")}'`, (err) => {
+      if (err) {
+        console.error(`[HTTP] Nudge failed: ${err.message}`);
+      } else {
+        console.error("[HTTP] Nudged Claude Code with 'fix'");
+      }
+    });
+  }, NUDGE_DELAY);
+}
 
 function killPortHolder(port: number): void {
   try {
@@ -20,6 +58,7 @@ function killPortHolder(port: number): void {
 
 export function startHttpBridge(port: number): void {
   const projectName = path.basename(process.cwd());
+  const autoNudge = process.env.VF_AUTO_NUDGE !== "0"; // enabled by default
 
   const server = http.createServer((req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -88,6 +127,9 @@ export function startHttpBridge(port: number): void {
           console.error(`[HTTP] Received feedback ${item.id.slice(0, 8)} (pending: ${store.pendingCount()})`);
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: true, id: item.id, queueSize: store.pendingCount() }));
+
+          // Auto-nudge Claude Code
+          if (autoNudge) nudgeClaude();
         } catch {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: false, error: "Invalid JSON" }));
@@ -115,6 +157,6 @@ export function startHttpBridge(port: number): void {
   });
 
   server.listen(port, "127.0.0.1", () => {
-    console.error(`[HTTP] Visual feedback bridge on http://127.0.0.1:${port}`);
+    console.error(`[HTTP] Visual feedback bridge on http://127.0.0.1:${port} (auto-nudge: ${autoNudge ? "on" : "off"})`);
   });
 }
