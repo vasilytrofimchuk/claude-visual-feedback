@@ -87,6 +87,17 @@ export function startHttpBridge(port: number): void {
     res.end();
   });
 
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      // Another instance already owns the HTTP bridge — that's fine.
+      // This instance still works via stdio MCP. The existing HTTP bridge
+      // handles Chrome extension requests for all instances.
+      console.error(`[HTTP] Port ${port} already in use — sharing with existing instance. Stdio MCP still works.`);
+    } else {
+      console.error(`[HTTP] Server error: ${err.message}`);
+    }
+  });
+
   server.listen(port, "127.0.0.1", () => {
     console.error(`[HTTP] Visual feedback bridge on http://127.0.0.1:${port}`);
   });
