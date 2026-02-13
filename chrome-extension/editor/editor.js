@@ -276,6 +276,7 @@ class AnnotationEditor {
       if (data.ok) {
         this.currentFeedbackId = data.id;
         this.addMessage("system", "Sent to Claude. Waiting...");
+        this.showNewScreenshotButton();
         this.startPolling(data.id);
       } else {
         throw new Error(data.error || "Server error");
@@ -311,15 +312,11 @@ class AnnotationEditor {
     } catch {}
   }
 
-  onClaudeResponse(response) {
-    this.addMessage("claude", this._esc(response));
-    this.addMessage("system",
-      '<span class="refresh-link" id="refreshPage">Refresh page</span>'
-    );
+  showNewScreenshotButton() {
+    // Remove existing big button if any
+    const existing = document.querySelector(".new-screenshot-big");
+    if (existing) existing.remove();
 
-    document.getElementById("refreshPage").addEventListener("click", () => this.refreshAndReopen());
-
-    // Big new screenshot button
     const messages = document.getElementById("chatMessages");
     const btn = document.createElement("button");
     btn.className = "new-screenshot-big";
@@ -330,6 +327,16 @@ class AnnotationEditor {
     });
     messages.appendChild(btn);
     messages.scrollTop = messages.scrollHeight;
+  }
+
+  onClaudeResponse(response) {
+    this.addMessage("claude", this._esc(response));
+    this.addMessage("system",
+      '<span class="refresh-link" id="refreshPage">Refresh page</span>'
+    );
+
+    document.getElementById("refreshPage").addEventListener("click", () => this.refreshAndReopen());
+    this.showNewScreenshotButton();
 
     document.getElementById("sendBtn").disabled = false;
     document.getElementById("instructions").placeholder = "Follow up...";
