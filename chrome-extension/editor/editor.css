@@ -17,24 +17,35 @@ html, body {
 /* ---- Left: Screenshot area ---- */
 .canvas-area {
   flex: 1;
-  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
   background: #0a0a0a;
+  position: relative;
 }
 
-.canvas-area canvas {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.canvas-wrapper {
+  position: relative;
   max-width: calc(100% - 16px);
   max-height: calc(100% - 16px);
 }
 
+#screenshotCanvas {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 16px);
+}
+
 #annotationCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   cursor: crosshair;
-  z-index: 2;
   touch-action: none;
+  z-index: 2;
 }
 
 /* ---- Close button ---- */
@@ -60,10 +71,6 @@ html, body {
 .close-btn:hover {
   background: rgba(220, 50, 50, 0.8);
   color: #fff;
-}
-
-#screenshotCanvas {
-  z-index: 1;
 }
 
 /* ---- Canvas hidden after send ---- */
