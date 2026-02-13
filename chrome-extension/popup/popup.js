@@ -54,6 +54,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         dataUrl: capture.dataUrl,
         pageUrl: tabInfo.url,
         pageTitle: tabInfo.title,
+        tabId: tabInfo.tabId,
       },
     });
 

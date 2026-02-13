@@ -21,7 +21,26 @@ export function startHttpBridge(port: number): void {
 
     if (req.method === "GET" && req.url === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ ok: true, queueSize: store.count(), projectName }));
+      res.end(JSON.stringify({ ok: true, queueSize: store.pendingCount(), projectName }));
+      return;
+    }
+
+    // Poll for feedback status (extension polls this)
+    if (req.method === "GET" && req.url?.startsWith("/feedback/")) {
+      const id = req.url.slice("/feedback/".length);
+      const item = store.getById(id);
+      if (!item) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Not found" }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        ok: true,
+        id: item.id,
+        status: item.status,
+        response: item.response || null,
+      }));
       return;
     }
 
@@ -50,11 +69,12 @@ export function startHttpBridge(port: number): void {
             pageTitle: data.pageTitle || "",
             annotatedScreenshot: data.annotatedScreenshot || "",
             instructions: data.instructions || "",
+            status: "pending",
           };
           store.add(item);
-          console.error(`[HTTP] Received feedback ${item.id.slice(0, 8)} (queue: ${store.count()})`);
+          console.error(`[HTTP] Received feedback ${item.id.slice(0, 8)} (pending: ${store.pendingCount()})`);
           res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ ok: true, id: item.id, queueSize: store.count() }));
+          res.end(JSON.stringify({ ok: true, id: item.id, queueSize: store.pendingCount() }));
         } catch {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: false, error: "Invalid JSON" }));

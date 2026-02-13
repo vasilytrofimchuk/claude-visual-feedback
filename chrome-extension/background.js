@@ -16,8 +16,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({
         url: tab?.url || "",
         title: tab?.title || "",
+        tabId: tab?.id || null,
       });
     });
+    return true;
+  }
+
+  if (message.action === "reloadTab") {
+    if (message.tabId) {
+      chrome.tabs.reload(message.tabId);
+    }
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (message.action === "captureExistingTab") {
+    // Capture a specific tab (for recapture)
+    if (message.tabId) {
+      chrome.tabs.update(message.tabId, { active: true }, () => {
+        setTimeout(() => {
+          chrome.tabs.captureVisibleTab(null, { format: "png" }, (dataUrl) => {
+            if (chrome.runtime.lastError) {
+              sendResponse({ error: chrome.runtime.lastError.message });
+              return;
+            }
+            sendResponse({ dataUrl });
+          });
+        }, 300);
+      });
+    }
     return true;
   }
 });

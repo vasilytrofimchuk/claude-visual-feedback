@@ -5,6 +5,7 @@
   "description": "Capture screenshots, circle issues, and send to Claude Code for fixing",
   "permissions": [
     "activeTab",
+    "tabs",
     "storage"
   ],
   "action": {

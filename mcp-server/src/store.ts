@@ -1,35 +1,68 @@
+export type FeedbackStatus = "pending" | "processing" | "done";
+
 export interface FeedbackItem {
   id: string;
   timestamp: string;
   pageUrl: string;
   pageTitle: string;
-  annotatedScreenshot: string; // base64 PNG
+  annotatedScreenshot: string;
   instructions: string;
+  status: FeedbackStatus;
+  response?: string;
 }
 
 class FeedbackStore {
-  private items: FeedbackItem[] = [];
+  private items: Map<string, FeedbackItem> = new Map();
 
   add(item: FeedbackItem): void {
-    this.items.push(item);
+    this.items.set(item.id, item);
   }
 
-  getAll(): FeedbackItem[] {
-    return [...this.items];
+  getById(id: string): FeedbackItem | undefined {
+    return this.items.get(id);
   }
 
-  getNext(): FeedbackItem | undefined {
-    return this.items.shift();
+  getNextPending(): FeedbackItem | undefined {
+    for (const item of this.items.values()) {
+      if (item.status === "pending") {
+        item.status = "processing";
+        return item;
+      }
+    }
+    return undefined;
   }
 
-  count(): number {
-    return this.items.length;
+  respond(message: string): FeedbackItem | undefined {
+    for (const item of this.items.values()) {
+      if (item.status === "processing") {
+        item.status = "done";
+        item.response = message;
+        return item;
+      }
+    }
+    return undefined;
+  }
+
+  pendingCount(): number {
+    let count = 0;
+    for (const item of this.items.values()) {
+      if (item.status === "pending") count++;
+    }
+    return count;
+  }
+
+  totalCount(): number {
+    return this.items.size;
   }
 
   clear(): number {
-    const count = this.items.length;
-    this.items = [];
+    const count = this.items.size;
+    this.items.clear();
     return count;
+  }
+
+  getAll(): FeedbackItem[] {
+    return [...this.items.values()];
   }
 }
 
