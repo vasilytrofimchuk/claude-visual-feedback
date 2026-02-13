@@ -74,6 +74,7 @@ class AnnotationEditor {
     canvas.addEventListener("pointerup", () => this.onPointerUp());
     canvas.addEventListener("pointerleave", () => this.onPointerUp());
 
+    document.getElementById("closeBtn").addEventListener("click", () => window.close());
     document.getElementById("undoBtn").addEventListener("click", () => this.undo());
     document.addEventListener("keydown", (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "z") {
