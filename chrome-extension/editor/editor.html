@@ -11,6 +11,7 @@
       <canvas id="screenshotCanvas"></canvas>
       <canvas id="annotationCanvas"></canvas>
     </div>
+    <div id="hint" class="hint">Circle issues, then type below or just hit Send</div>
     <div class="bottom-bar">
       <div class="controls">
         <button id="undoBtn" class="ctrl-btn" title="Undo (Ctrl+Z)">Undo</button>
@@ -18,10 +19,10 @@
       <input
         type="text"
         id="instructions"
-        placeholder="Describe what to fix (optional) — press Enter to send"
+        placeholder="What to fix? (optional) — Enter to send"
         autocomplete="off"
       />
-      <button id="sendBtn" class="send-btn">Send</button>
+      <button id="sendBtn" class="send-btn">Send to Claude</button>
     </div>
     <div id="status" class="status-msg"></div>
   </div>

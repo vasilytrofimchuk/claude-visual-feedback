@@ -11,10 +11,12 @@ class AnnotationEditor {
     this.screenshotCtx = this.screenshotCanvas.getContext("2d");
     this.annotationCtx = this.annotationCanvas.getContext("2d");
 
-    this.strokes = []; // Array of point arrays
+    this.strokes = [];
     this.currentStroke = null;
     this.isDrawing = false;
     this.captureData = null;
+    this.hintShown = false;
+    this.focusTimer = null;
 
     this.init();
   }
@@ -35,7 +37,6 @@ class AnnotationEditor {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        // Downscale HiDPI
         let w = img.width;
         let h = img.height;
         if (w > MAX_WIDTH) {
@@ -99,6 +100,12 @@ class AnnotationEditor {
     const pt = this.getCoords(e);
     this.currentStroke = [pt];
     this.annotationCanvas.setPointerCapture(e.pointerId);
+
+    // Cancel any pending focus timer when user starts drawing again
+    if (this.focusTimer) {
+      clearTimeout(this.focusTimer);
+      this.focusTimer = null;
+    }
   }
 
   onPointerMove(e) {
@@ -116,6 +123,21 @@ class AnnotationEditor {
     }
     this.currentStroke = null;
     this.redraw();
+
+    // Show hint after first stroke
+    if (!this.hintShown && this.strokes.length > 0) {
+      this.hintShown = true;
+      const hint = document.getElementById("hint");
+      hint.classList.add("visible");
+      setTimeout(() => hint.classList.remove("visible"), 3000);
+    }
+
+    // Auto-focus text input after drawing stops (short delay so user can draw more)
+    if (this.strokes.length > 0) {
+      this.focusTimer = setTimeout(() => {
+        document.getElementById("instructions").focus();
+      }, 800);
+    }
   }
 
   drawStroke(ctx, points) {
@@ -170,6 +192,7 @@ class AnnotationEditor {
   async send() {
     const sendBtn = document.getElementById("sendBtn");
     sendBtn.disabled = true;
+    sendBtn.textContent = "Sending...";
 
     const instructions = document.getElementById("instructions").value.trim();
     const annotatedScreenshot = this.exportComposite();
@@ -200,6 +223,7 @@ class AnnotationEditor {
     } catch (err) {
       this.showStatus(`Error: ${err.message}`, "error");
       sendBtn.disabled = false;
+      sendBtn.textContent = "Send to Claude";
     }
   }
 }

@@ -21,11 +21,8 @@ html, body {
 .canvas-wrap {
   flex: 1;
   position: relative;
-  overflow: auto;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 8px;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .canvas-wrap canvas {
@@ -47,13 +44,16 @@ html, body {
   z-index: 1;
 }
 
+/* ---- Bottom bar: always visible, prominent ---- */
 .bottom-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: #1a1a2e;
-  border-top: 1px solid #333;
+  gap: 10px;
+  padding: 14px 20px;
+  background: #16163a;
+  border-top: 2px solid #6366f1;
+  flex-shrink: 0;
+  z-index: 5;
 }
 
 .controls {
@@ -62,12 +62,12 @@ html, body {
 }
 
 .ctrl-btn {
-  padding: 6px 12px;
+  padding: 8px 14px;
   border: 1px solid #444;
   border-radius: 6px;
   background: #2a2a3e;
   color: #ccc;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -78,13 +78,14 @@ html, body {
 
 #instructions {
   flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #444;
-  border-radius: 6px;
+  padding: 12px 14px;
+  border: 2px solid #444;
+  border-radius: 8px;
   background: #222;
   color: #e0e0e0;
-  font-size: 13px;
+  font-size: 15px;
   outline: none;
+  transition: border-color 0.15s;
 }
 
 #instructions:focus {
@@ -92,23 +93,25 @@ html, body {
 }
 
 #instructions::placeholder {
-  color: #666;
+  color: #777;
 }
 
 .send-btn {
-  padding: 8px 20px;
+  padding: 12px 32px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #6366f1;
   color: #fff;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.1s;
+  white-space: nowrap;
 }
 
 .send-btn:hover:not(:disabled) {
   background: #4f46e5;
+  transform: scale(1.03);
 }
 
 .send-btn:disabled {
@@ -117,13 +120,38 @@ html, body {
   cursor: not-allowed;
 }
 
+/* ---- Hint shown after first stroke ---- */
+.hint {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 20px;
+  border-radius: 20px;
+  background: rgba(99, 102, 241, 0.9);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.hint.visible {
+  opacity: 1;
+}
+
+/* ---- Status toast ---- */
 .status-msg {
   position: fixed;
-  top: 12px;
-  right: 12px;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 13px;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
   background: #1a1a2e;
   border: 1px solid #333;
   display: none;
@@ -137,9 +165,11 @@ html, body {
 .status-msg.success {
   border-color: #4ade80;
   color: #4ade80;
+  background: rgba(26, 26, 46, 0.95);
 }
 
 .status-msg.error {
   border-color: #f87171;
   color: #f87171;
+  background: rgba(26, 26, 46, 0.95);
 }
