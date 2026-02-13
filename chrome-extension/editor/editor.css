@@ -1,0 +1,145 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  background: #111;
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.canvas-wrap {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px;
+}
+
+.canvas-wrap canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: calc(100% - 16px);
+  max-height: calc(100% - 16px);
+  object-fit: contain;
+}
+
+#annotationCanvas {
+  cursor: crosshair;
+  z-index: 2;
+}
+
+#screenshotCanvas {
+  z-index: 1;
+}
+
+.bottom-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #1a1a2e;
+  border-top: 1px solid #333;
+}
+
+.controls {
+  display: flex;
+  gap: 4px;
+}
+
+.ctrl-btn {
+  padding: 6px 12px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #2a2a3e;
+  color: #ccc;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ctrl-btn:hover {
+  background: #3a3a4e;
+}
+
+#instructions {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #222;
+  color: #e0e0e0;
+  font-size: 13px;
+  outline: none;
+}
+
+#instructions:focus {
+  border-color: #6366f1;
+}
+
+#instructions::placeholder {
+  color: #666;
+}
+
+.send-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  background: #6366f1;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.send-btn:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.status-msg {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  display: none;
+  z-index: 10;
+}
+
+.status-msg.visible {
+  display: block;
+}
+
+.status-msg.success {
+  border-color: #4ade80;
+  color: #4ade80;
+}
+
+.status-msg.error {
+  border-color: #f87171;
+  color: #f87171;
+}

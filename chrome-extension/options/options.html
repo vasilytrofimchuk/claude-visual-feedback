@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Visual Feedback — Settings</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      padding: 32px;
+      max-width: 400px;
+    }
+    h1 { font-size: 18px; margin-bottom: 20px; color: #fff; }
+    label { display: block; font-size: 13px; color: #a0a0b0; margin-bottom: 4px; }
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #444;
+      border-radius: 6px;
+      background: #222;
+      color: #e0e0e0;
+      font-size: 14px;
+      margin-bottom: 16px;
+      outline: none;
+    }
+    input:focus { border-color: #6366f1; }
+    button {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 6px;
+      background: #6366f1;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: #4f46e5; }
+    .saved { color: #4ade80; font-size: 13px; margin-left: 12px; display: none; }
+    .saved.show { display: inline; }
+  </style>
+</head>
+<body>
+  <h1>Visual Feedback Settings</h1>
+  <label for="host">Server Host</label>
+  <input type="text" id="host" value="127.0.0.1">
+  <label for="port">Server Port</label>
+  <input type="number" id="port" value="9823">
+  <button id="saveBtn">Save</button>
+  <span id="savedMsg" class="saved">Saved!</span>
+  <script src="options.js"></script>
+</body>
+</html>

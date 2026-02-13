@@ -1,0 +1,26 @@
+{
+  "name": "claude-visual-feedback",
+  "version": "1.0.0",
+  "description": "MCP server for visual feedback — receive annotated screenshots from Chrome extension and expose them to Claude Code",
+  "type": "module",
+  "bin": {
+    "claude-visual-feedback": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node build/index.js"
+  },
+  "keywords": ["mcp", "claude", "visual-feedback", "screenshot", "annotation"],
+  "author": "Vasily Trofimchuk",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
