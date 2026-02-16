@@ -1,5 +1,5 @@
 import http from "node:http";
-import { exec, execSync } from "node:child_process";
+import { exec } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { store, type FeedbackItem } from "./store.js";
@@ -44,21 +44,11 @@ function nudgeClaude(): void {
   }, NUDGE_DELAY);
 }
 
-function killPortHolder(port: number): void {
-  try {
-    const pids = execSync(`lsof -ti:${port}`, { encoding: "utf-8" }).trim();
-    if (pids) {
-      execSync(`kill ${pids.split("\n").join(" ")}`);
-      console.error(`[HTTP] Killed old process(es) on port ${port}`);
-    }
-  } catch {
-    // Nothing on the port — good
-  }
-}
-
 export function startHttpBridge(port: number): void {
   const projectName = path.basename(process.cwd());
   const autoNudge = process.env.VF_AUTO_NUDGE !== "0"; // enabled by default
+  const maxPort = port + 20; // must match extension scan range
+  let currentPort = port;
 
   const server = http.createServer((req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -142,21 +132,20 @@ export function startHttpBridge(port: number): void {
     res.end();
   });
 
-  let retried = false;
-
   server.on("error", (err: NodeJS.ErrnoException) => {
-    if (err.code === "EADDRINUSE" && !retried) {
-      retried = true;
-      killPortHolder(port);
-      setTimeout(() => server.listen(port, "127.0.0.1"), 500);
-    } else if (err.code === "EADDRINUSE") {
-      console.error(`[HTTP] Port ${port} still in use after retry — stdio MCP still works.`);
+    if (err.code === "EADDRINUSE") {
+      currentPort++;
+      if (currentPort < maxPort) {
+        server.listen(currentPort, "127.0.0.1");
+      } else {
+        console.error(`[HTTP] All ports ${port}–${maxPort - 1} in use — HTTP bridge disabled, stdio MCP still works.`);
+      }
     } else {
       console.error(`[HTTP] Server error: ${err.message}`);
     }
   });
 
-  server.listen(port, "127.0.0.1", () => {
-    console.error(`[HTTP] Visual feedback bridge on http://127.0.0.1:${port} (auto-nudge: ${autoNudge ? "on" : "off"})`);
+  server.listen(currentPort, "127.0.0.1", () => {
+    console.error(`[HTTP] Visual feedback bridge on http://127.0.0.1:${currentPort} (auto-nudge: ${autoNudge ? "on" : "off"})`);
   });
 }
