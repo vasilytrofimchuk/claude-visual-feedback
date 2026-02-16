@@ -1,27 +1,33 @@
-const DEFAULT_HOST = "127.0.0.1";
-const DEFAULT_PORT = 9823;
-
-async function getServerUrl() {
-  const settings = await chrome.storage.sync.get({ host: DEFAULT_HOST, port: DEFAULT_PORT });
-  return `http://${settings.host}:${settings.port}`;
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
   const captureBtn = document.getElementById("captureBtn");
   const serverStatus = document.getElementById("serverStatus");
   const projectName = document.getElementById("projectName");
   const statusLabel = serverStatus.querySelector(".label");
 
-  const serverUrl = await getServerUrl();
-
-  // Check server health
+  // Discover all running project servers
   try {
-    const res = await fetch(`${serverUrl}/health`);
-    const data = await res.json();
-    serverStatus.classList.add("connected");
-    statusLabel.textContent = `Connected (${data.queueSize} queued)`;
-    projectName.textContent = `Project: ${data.projectName}`;
-    captureBtn.disabled = false;
+    const projects = await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ action: "discoverProjects" }, (response) => {
+        if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+        else resolve(response || []);
+      });
+    });
+
+    if (projects.length === 0) {
+      serverStatus.classList.add("disconnected");
+      statusLabel.textContent = "No servers found";
+      projectName.textContent = "Start Claude Code with visual-feedback MCP";
+    } else if (projects.length === 1) {
+      serverStatus.classList.add("connected");
+      statusLabel.textContent = `Connected (${projects[0].queueSize} queued)`;
+      projectName.textContent = `Project: ${projects[0].projectName}`;
+      captureBtn.disabled = false;
+    } else {
+      serverStatus.classList.add("connected");
+      statusLabel.textContent = `${projects.length} projects running`;
+      projectName.textContent = projects.map((p) => p.projectName).join(", ");
+      captureBtn.disabled = false;
+    }
   } catch {
     serverStatus.classList.add("disconnected");
     statusLabel.textContent = "Server not running";

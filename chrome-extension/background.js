@@ -100,9 +100,12 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 
 // Proxy fetch through background worker (avoids mixed-content blocks on HTTPS pages)
-async function proxyFetch(url, options) {
+async function proxyFetch(url, options, timeoutMs = 1000) {
   try {
-    const res = await fetch(url, options);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
     const data = await res.json();
     return data;
   } catch (err) {
@@ -112,17 +115,41 @@ async function proxyFetch(url, options) {
 
 // Message handler
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Discover all running project servers by scanning port range
+  if (message.action === "discoverProjects") {
+    (async () => {
+      const settings = await chrome.storage.sync.get({ host: DEFAULT_HOST, port: DEFAULT_PORT });
+      const host = settings.host;
+      const basePort = settings.port;
+      const scanRange = 20;
+
+      const promises = [];
+      for (let p = basePort; p < basePort + scanRange; p++) {
+        const url = `http://${host}:${p}`;
+        promises.push(
+          proxyFetch(`${url}/health`).then(data =>
+            data.ok ? { host, port: p, url, projectName: data.projectName, queueSize: data.queueSize } : null
+          )
+        );
+      }
+
+      const results = await Promise.all(promises);
+      sendResponse(results.filter(Boolean));
+    })();
+    return true;
+  }
+
   // Proxy: health check
   if (message.action === "healthCheck") {
-    getServerUrl().then(serverUrl =>
-      proxyFetch(`${serverUrl}/health`)
-    ).then(sendResponse);
+    const urlP = message.serverUrl ? Promise.resolve(message.serverUrl) : getServerUrl();
+    urlP.then(serverUrl => proxyFetch(`${serverUrl}/health`)).then(sendResponse);
     return true;
   }
 
   // Proxy: send feedback
   if (message.action === "sendFeedback") {
-    getServerUrl().then(serverUrl =>
+    const urlP = message.serverUrl ? Promise.resolve(message.serverUrl) : getServerUrl();
+    urlP.then(serverUrl =>
       proxyFetch(`${serverUrl}/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -134,7 +161,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Proxy: poll feedback status
   if (message.action === "pollFeedback") {
-    getServerUrl().then(serverUrl =>
+    const urlP = message.serverUrl ? Promise.resolve(message.serverUrl) : getServerUrl();
+    urlP.then(serverUrl =>
       proxyFetch(`${serverUrl}/feedback/${message.feedbackId}`)
     ).then(sendResponse);
     return true;

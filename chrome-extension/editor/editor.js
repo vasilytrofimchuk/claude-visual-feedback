@@ -14,18 +14,42 @@ class AnnotationEditor {
     this.currentStroke = null;
     this.isDrawing = false;
     this.captureData = null;
-    this.pendingIds = new Set();
+    this.pendingIds = new Map(); // feedbackId -> serverUrl
     this.pollTimer = null;
+    this.selectedServerUrl = null;
+    this.projects = [];
 
     this.setupEvents();
     this.init().catch((err) => console.error("[VF] init error:", err));
   }
 
   async init() {
+    // Discover running project servers
     try {
-      const data = await this.bgMessage({ action: "healthCheck" });
-      document.getElementById("projectLabel").textContent = data.projectName || "Visual Feedback";
-    } catch {}
+      this.projects = await this.bgMessage({ action: "discoverProjects" });
+    } catch {
+      this.projects = [];
+    }
+
+    const select = document.getElementById("projectSelect");
+
+    if (this.projects.length === 0) {
+      select.innerHTML = '<option value="" disabled selected>No servers found</option>';
+    } else if (this.projects.length === 1) {
+      const p = this.projects[0];
+      select.innerHTML = `<option value="${p.url}">${p.projectName}</option>`;
+      this.selectedServerUrl = p.url;
+    } else {
+      select.innerHTML = this.projects
+        .map((p) => `<option value="${p.url}">${p.projectName} (:${p.port})</option>`)
+        .join("");
+      this.selectedServerUrl = this.projects[0].url;
+      select.value = this.selectedServerUrl;
+    }
+
+    select.addEventListener("change", () => {
+      this.selectedServerUrl = select.value;
+    });
 
     const { pendingCapture } = await chrome.storage.local.get("pendingCapture");
     if (!pendingCapture) {
@@ -237,6 +261,10 @@ class AnnotationEditor {
 
   async send() {
     if (!this.captureData) return;
+    if (!this.selectedServerUrl) {
+      this.addMessage("system", "No project server selected.");
+      return;
+    }
     const sendBtn = document.getElementById("sendBtn");
     const input = document.getElementById("instructions");
     sendBtn.disabled = true;
@@ -256,6 +284,7 @@ class AnnotationEditor {
     try {
       const data = await this.bgMessage({
         action: "sendFeedback",
+        serverUrl: this.selectedServerUrl,
         payload: {
           pageUrl: this.captureData.pageUrl,
           pageTitle: this.captureData.pageTitle,
@@ -266,7 +295,7 @@ class AnnotationEditor {
 
       if (data.ok) {
         this.addMessage("system", `Queued (#${this.pendingIds.size + 1})`);
-        this.pendingIds.add(data.id);
+        this.pendingIds.set(data.id, this.selectedServerUrl);
         this.ensurePolling();
         // Re-enable immediately so user can send more
         sendBtn.disabled = false;
@@ -300,9 +329,9 @@ class AnnotationEditor {
       return;
     }
 
-    for (const feedbackId of this.pendingIds) {
+    for (const [feedbackId, serverUrl] of this.pendingIds) {
       try {
-        const data = await this.bgMessage({ action: "pollFeedback", feedbackId });
+        const data = await this.bgMessage({ action: "pollFeedback", feedbackId, serverUrl });
         if (data.status === "done") {
           this.pendingIds.delete(feedbackId);
           this.onClaudeResponse(data.response);
